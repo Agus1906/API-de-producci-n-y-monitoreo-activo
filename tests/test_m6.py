@@ -120,7 +120,7 @@ class FakeModel:
                                 reason='Decisión de prueba')
         return Router()
 
-    def bind_tools(self, tools, tool_choice):
+    def bind_tools(self, tools, tool_choice, parallel_tool_calls=False):
         class Specialist:
             def invoke(self, messages):
                 import json

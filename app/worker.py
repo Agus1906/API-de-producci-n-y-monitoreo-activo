@@ -38,7 +38,8 @@ async def process(store, graph, job_id, timeout):
         return
     await store.update(job, 'RUNNING')
     try:
-        result = await asyncio.wait_for(execute(graph, job), timeout)
+        result = await asyncio.wait_for(execute(
+            graph, job, langsmith_extra={'metadata': {'job_id': job_id}}), timeout)
         if result.get('__interrupt__'):
             await store.update(job, 'WAITING_APPROVAL', result=result['final_answer'])
         else:
