@@ -49,12 +49,25 @@ async def test_worker_success_and_approval(store):
     job = await store.submit(QUERY, 'publish_report')
     await process(store, graph, job['job_id'], 20)
     assert (await store.get(job['job_id']))['status'] == 'WAITING_APPROVAL'
+    assert (await store.get(job['job_id']))['result']
     assert await store.redis.get('p7:report:' + job['job_id']) is None
     decisions = await asyncio.gather(*(store.approve(job['job_id'], True) for _ in range(5)))
     assert decisions.count(1) == 1
     await process(store, graph, job['job_id'], 20)
     assert (await store.get(job['job_id']))['status'] == 'DONE'
     assert await store.redis.get('p7:report:' + job['job_id'])
+
+
+async def test_recovery_after_checkpoint_before_job_update(store):
+    graph = build_graph(InMemorySaver())
+    job = await store.submit(QUERY, 'analyze')
+    await graph.ainvoke({'query': QUERY, 'action': 'analyze'},
+                       {'configurable': {'thread_id': job['job_id']}})
+    await store.update(job, 'RUNNING')
+    await process(store, graph, job['job_id'], 20)
+    recovered = await store.get(job['job_id'])
+    assert recovered['status'] == 'DONE'
+    assert recovered['result']
 
 
 @pytest.mark.parametrize('failure', ['error', 'timeout'])

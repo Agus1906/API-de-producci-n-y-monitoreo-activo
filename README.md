@@ -9,6 +9,8 @@ API **FastAPI asíncrona** que expone el orquestador del [Módulo 6](https://git
 - **Pendiente de evidencia:** corrida con proveedor real y capturas del dashboard LangSmith de trazas, costo por ejecución y p95. No hay capturas ni métricas inventadas. Ver `screenshots/README.md`.
 - Es un prototipo académico con controles operativos; no supone una infraestructura productiva ya desplegada.
 
+**Validación con Redis real:** [GitHub Actions](https://github.com/Agus1906/API-de-producci-n-y-monitoreo-activo/actions/runs/43926777844) ejecutó satisfactoriamente 29 pruebas y cinco solicitudes concurrentes por HTTP con API y worker separados, todas en DONE. En esa corrida offline, el tiempo de encolado fue de 24–42 ms y la p95 del cliente fue 1,053 s (incluye polling de un segundo). El JSON se conserva como artefacto `offline-load-test` de Actions. Estas mediciones no son costos ni p95 de LangSmith.
+
 ## 1. Configuración
 
 Requiere Python **3.12+**, Docker Compose y Redis **8** (incluye JSON y Search, necesarios para el checkpointer; Redis básico antiguo no alcanza).
