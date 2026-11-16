@@ -145,3 +145,15 @@ def test_analysis_cannot_modify_tool_inputs():
     with pytest.raises(ValueError, match='alterar'):
         call_role_tool(model, 'Analiza', {'documents': []}, calculate_savings,
                        {'documents': [{'id': 'different'}]}, fixed_arguments=True)
+
+
+def test_supervisor_cannot_repeat_research_when_evidence_is_valid():
+    class RepeatingResearch(FakeModel):
+        def with_structured_output(self, schema):
+            class Router:
+                def invoke(self, messages):
+                    return Decision(next_agent='research', reason='Reinvestigar')
+            return Router()
+    result = run(DEMO_QUERY, model=RepeatingResearch())
+    assert result['task_completed']
+    assert result['steps'] == 3

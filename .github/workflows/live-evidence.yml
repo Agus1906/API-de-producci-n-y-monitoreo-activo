@@ -20,7 +20,7 @@ jobs:
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
       LANGSMITH_TRACING: 'true'
-      LANGSMITH_PROJECT: preentrega7-evidencia-final
+      LANGSMITH_PROJECT: preentrega7-entrega-validada
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

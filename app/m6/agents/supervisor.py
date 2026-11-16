@@ -55,7 +55,9 @@ def make_supervisor(max_steps=8, model=None):
                 ('human', json.dumps({'query': state['query'], 'required': target,
                                       'issues': issues, 'step': step}, ensure_ascii=False))])
             # Las propuestas nunca pueden eludir la rúbrica ejecutable.
-            if decision.next_agent == target or decision.next_agent in ('research', 'stop'):
+            # La rúbrica decide cuándo hace falta refinar evidencia. Una propuesta
+            # de research con evidencia válida no puede reiniciar el ciclo sin fin.
+            if decision.next_agent == target or decision.next_agent == 'stop':
                 target, reason = decision.next_agent, decision.reason
             else:
                 reason = f'Propuesta bloqueada por rúbrica: {decision.next_agent}; {reason}'
