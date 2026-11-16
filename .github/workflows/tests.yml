@@ -17,7 +17,7 @@ jobs:
       - run: python -m ruff check .
       - run: python -m pytest -q
         env:
-          TEST_REDIS_URL: redis://localhost:6379/15
+          TEST_REDIS_URL: redis://localhost:6379/0
       - run: pip check
       - name: Five concurrent requests through real API and worker
         env:
