@@ -53,7 +53,7 @@ Invoke-RestMethod "http://localhost:8000/tasks/$($job.job_id)" -Headers $headers
 ```powershell
 $body = @{query='Investiga pilotos RPA y calcula ahorro mensual'; action='publish_report'} | ConvertTo-Json
 $job = Invoke-RestMethod http://localhost:8000/tasks -Method Post -Headers $headers -ContentType application/json -Body $body
-# Consultar hasta WAITING_APPROVAL y revisar el resultado en el checkpoint/dashboard.
+# Consultar GET /tasks/{job_id} hasta WAITING_APPROVAL y revisar result antes de aprobar.
 $headers['X-Approval-Key'] = '<APPROVAL_KEY configurada>'
 Invoke-RestMethod "http://localhost:8000/tasks/$($job.job_id)/approve" -Method Post -Headers $headers -ContentType application/json -Body '{"approved":true}'
 ```

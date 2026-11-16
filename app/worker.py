@@ -40,7 +40,7 @@ async def process(store, graph, job_id, timeout):
     try:
         result = await asyncio.wait_for(execute(graph, job), timeout)
         if result.get('__interrupt__'):
-            await store.update(job, 'WAITING_APPROVAL')
+            await store.update(job, 'WAITING_APPROVAL', result=result['final_answer'])
         else:
             if result.get('publication'):
                 # Idempotencia: clave estable y contenido validado por el grafo.
