@@ -6,7 +6,7 @@ API **FastAPI asíncrona** que expone el orquestador del [Módulo 6](https://git
 
 - Implementados: API, Redis Streams, checkpoints `AsyncRedisSaver`, worker separado, timeout/FAILED, HITL con aprobación autenticada, LangSmith y prueba de cinco solicitudes concurrentes.
 - El modo `offline` ejecuta reglas y herramientas locales: **no llama a un LLM y no demuestra costos de inferencia**.
-- **Pendiente de evidencia:** corrida con proveedor real y capturas del dashboard LangSmith de trazas, costo por ejecución y p95. No hay capturas ni métricas inventadas. Ver `screenshots/README.md`.
+- **Evidencia real completa:** cinco tareas concurrentes en DONE con Anthropic y Redis, trazas por nodo, costos calculados por LangSmith y p95 del dashboard. Ver [capturas](screenshots/README.md) y [corrida real](https://github.com/Agus1906/API-de-producci-n-y-monitoreo-activo/actions/runs/43929439155).
 - Es un prototipo académico con controles operativos; no supone una infraestructura productiva ya desplegada.
 
 **Validación con Redis real:** [GitHub Actions](https://github.com/Agus1906/API-de-producci-n-y-monitoreo-activo/actions/runs/43926777844) ejecutó satisfactoriamente 29 pruebas y cinco solicitudes concurrentes por HTTP con API y worker separados, todas en DONE. En esa corrida offline, el tiempo de encolado fue de 24–42 ms y la p95 del cliente fue 1,053 s (incluye polling de un segundo). El JSON se conserva como artefacto `offline-load-test` de Actions. Estas mediciones no son costos ni p95 de LangSmith.
@@ -84,11 +84,27 @@ docker compose up -d --force-recreate worker
 
 El script envía **cinco POST concurrentes**, consulta los estados y guarda IDs/tiempos en `output/load_test.json`. Falla si alguna tarea no termina en DONE. `client_p95_seconds` usa nearest rank (con cinco observaciones corresponde al máximo); incluye cola y polling y **no sustituye la p95 del dashboard**.
 
-LangGraph/LangChain propagan callbacks a cada nodo y llamada `ChatOpenAI`. `task_execution` agrega una traza raíz por trabajo; `metadata.job_id` permite buscar exactamente los cinco IDs. LangSmith recibe modelo, proveedor y uso real de tokens del cliente para calcular costos según su catálogo; no se estiman precios en el código. Verificar que el modelo tenga precio en LangSmith.
+LangGraph/LangChain propagan callbacks a cada nodo y llamada `ChatOpenAI` o `ChatAnthropic`. `task_execution` agrega una traza raíz por trabajo; `metadata.job_id` permite buscar exactamente los cinco IDs. LangSmith recibe modelo, proveedor y uso real de tokens del cliente para calcular costos según su catálogo; no se estiman precios en el código. Verificar que el modelo tenga precio en LangSmith.
 
 En el proyecto LangSmith, filtrar por esos IDs y el intervalo de la corrida, abrir las trazas de los nodos, visualizar **Total Cost por ejecución** y el panel **p95 de latencia**. Guardar capturas en `screenshots/`. Revisar qué nodo concentra latencia y tokens. No mezclar spans hijos o ejecuciones anteriores con las cinco trazas raíz. Cinco muestras sirven como demostración, no como benchmark representativo.
 
 Las trazas pueden contener consultas y corpus. Usar sólo datos autorizados; nunca claves en prompts, logs o capturas. Si LangSmith no entrega trazas, revisar la configuración y el dashboard: éxito del job no garantiza entrega de telemetría.
+
+### Evidencia real del 16 de noviembre de 2026
+
+Proyecto LangSmith: `preentrega7-entrega-validada`. La [corrida 43929439155](https://github.com/Agus1906/API-de-producci-n-y-monitoreo-activo/actions/runs/43929439155) completó las cinco tareas en DONE. [Costos por ejecución](screenshots/02-costos-cinco-ejecuciones.jpg): USD 0,009728; 0,01003; 0,01024; 0,01639; 0,009538 (aproximadamente USD 0,0559 en total, sumando valores mostrados). [p95 del dashboard](screenshots/03-latencia-p95.jpg): **10,1 s**, con [configuración verificable](screenshots/04-configuracion-p95.jpg) en percentil 95 y filtro `Is Trace=true`.
+
+La p95 presentada es la calculada por LangSmith, cuya agregación de percentiles no se sustituye por una cuenta local. Las latencias individuales visibles llegan a 15,52 s y la p95 del cliente con polling es 16,099 s; son mediciones distintas. Cinco observaciones no describen la capacidad productiva.
+
+Lectura de una traza: la ejecución más lenta realizó tres búsquedas antes de obtener evidencia suficiente, frente a una en el flujo habitual. El supervisor concentra la mayor latencia acumulada (cinco llamadas de unos 2,05–2,37 s). El analista usa **1.372 tokens en una llamada**, más que cada llamada individual del supervisor de esa traza (aproximadamente 1.129–1.157 tokens; la primera 1.136). Los cálculos locales y síntesis aparecen cerca de 0 s. [Detalle del analista](screenshots/05-analista-tokens.jpg). La repetición de búsquedas explica el mayor costo y tiempo de esa tarea; no hubo fallos en esta corrida.
+
+### Proveedor Anthropic y ejecución remota
+
+También se admite `LLM_PROVIDER=anthropic`, `ANTHROPIC_API_KEY` y `ANTHROPIC_MODEL=claude-haiku-4-5-20251001`. Las claves se guardan en `.env` (ignorado por Git) o en los secretos de GitHub Actions; no en el código. El workflow manual **Live observability evidence** levanta Redis 8, API y worker, ejecuta cinco tareas reales y conserva el JSON como artefacto. Requiere los secretos `ANTHROPIC_API_KEY` y `LANGSMITH_API_KEY` en este repositorio. Ejecutarlo consume créditos de Anthropic.
+
+La clave LangSmith de la entrega sólo permite escribir trazas. Ambas claves nuevas vencen el **16 de diciembre de 2026**; renovarlas antes de reproducir la demo después de esa fecha. La demo no recarga saldo automáticamente.
+
+La validación real motivó dos controles adicionales: se deshabilitan llamadas paralelas de herramientas en cada especialista y la rúbrica bloquea propuestas de reinvestigar cuando la evidencia ya es válida. La refinación sigue disponible cuando la propia rúbrica detecta evidencia ausente o inválida. Esto evita duplicar herramientas y gastar tokens en ciclos improductivos.
 
 ## 4. Recuperación, límites y operación
 
