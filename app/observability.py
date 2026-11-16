@@ -14,6 +14,13 @@ def configure(config):
 def model(config):
     if config.agent_mode == 'offline':
         return None
+    if config.llm_provider == 'anthropic':
+        from langchain_anthropic import ChatAnthropic
+        if not config.anthropic_api_key:
+            raise ValueError('ANTHROPIC_API_KEY requerida para Anthropic')
+        return ChatAnthropic(model=config.anthropic_model,
+                             api_key=config.anthropic_api_key.get_secret_value(),
+                             max_tokens=2048, timeout=30, max_retries=1)
     from langchain_openai import ChatOpenAI
     if not config.openai_api_key:
         raise ValueError('OPENAI_API_KEY requerida en modo llm')

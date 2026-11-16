@@ -1,0 +1,48 @@
+name: Live observability evidence
+on:
+  workflow_dispatch:
+jobs:
+  live:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      redis:
+        image: redis:8.2
+        ports: ["6379:6379"]
+        options: --health-cmd "redis-cli ping" --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      REDIS_URL: redis://localhost:6379/0
+      API_KEY: live-run-internal-api
+      APPROVAL_KEY: live-run-internal-approver
+      AGENT_MODE: llm
+      LLM_PROVIDER: anthropic
+      ANTHROPIC_MODEL: claude-haiku-4-5-20251001
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
+      LANGSMITH_TRACING: 'true'
+      LANGSMITH_PROJECT: preentrega7-live
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements.txt
+      - name: Run five tasks with live model and tracing
+        run: |
+          python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 > /tmp/api.log 2>&1 &
+          API_PID=$!
+          python -m app.worker > /tmp/worker.log 2>&1 &
+          WORKER_PID=$!
+          trap 'kill $API_PID $WORKER_PID || true; cat /tmp/api.log; cat /tmp/worker.log' EXIT
+          for i in $(seq 1 30); do
+            if curl --fail --silent http://localhost:8000/health; then break; fi
+            sleep 1
+          done
+          python scripts/load_test.py
+          # Permite vaciar el buffer de trazas antes del cierre del worker.
+          sleep 10
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: live-load-test
+          path: output/load_test.json

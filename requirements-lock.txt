@@ -1,11 +1,13 @@
 annotated-doc==0.0.6
 annotated-types==0.8.0
+anthropic==2.9.0
 anyio==4.16.0
 certifi==2026.10.23
 charset-normalizer==3.5.2
 click==8.5.1
 colorama==0.4.6
 distro==1.9.0
+docstring_parser==0.18.0
 fakeredis==2.40.0
 fastapi==0.163.1
 h11==0.16.0
@@ -20,6 +22,7 @@ jiter==0.19.0
 jsonpatch==1.47
 jsonpath-ng==1.16.0
 jsonpointer==3.12
+langchain-anthropic==1.7.10
 langchain-core==1.8.1
 langchain-openai==1.8.0
 langchain-protocol==0.0.21

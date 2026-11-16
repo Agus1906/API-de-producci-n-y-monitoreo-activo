@@ -12,6 +12,9 @@ class Settings(BaseSettings):
     api_key: SecretStr
     approval_key: SecretStr
     agent_mode: Literal['offline', 'llm'] = 'offline'
+    llm_provider: Literal['openai', 'anthropic'] = 'openai'
+    anthropic_api_key: SecretStr | None = None
+    anthropic_model: str = 'claude-haiku-4-5-20251001'
     openai_api_key: SecretStr | None = None
     openai_model: str = 'gpt-4.1-mini'
     langsmith_tracing: bool = False
